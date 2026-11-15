@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+# Original-Screenshot (Kopie liegt in docs/)
+/webterm.png

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebTerm</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23222'/%3E%3Cpath d='M3 4l4 4-4 4' stroke='%2368d391' stroke-width='1.8' fill='none'/%3E%3Cpath d='M8 12h5' stroke='%2368d391' stroke-width='1.8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="vendor/xterm.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="bar">
+  <span class="logo">&#9002;_ WebTerm</span>
+  <span id="status" class="status off" title="Verbindungsstatus">getrennt</span>
+  <div id="tabs"></div>
+  <button id="btnNew" title="Neues Terminal (Strg+Umschalt+Enter)">+</button>
+  <button id="btnSplitV" class="icoBtn" title="Vertikal teilen – Terminals nebeneinander (Strg+Umschalt+E)"><svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M8 2.5v11"/></svg></button>
+  <button id="btnSplitH" class="icoBtn" title="Horizontal teilen – Terminals untereinander (Strg+Umschalt+O)"><svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 8h13"/></svg></button>
+  <span id="keyDiag" class="keyDiag" title="Letzte Taste: key | code | keyCode → Verarbeitung" hidden>Taste drücken …</span>
+  <span class="spacer"></span>
+  <span id="clock" class="clock"></span>
+  <button id="btnSmaller" title="Schrift kleiner (Strg+Umschalt+−)">A−</button>
+  <span id="sizeLabel" class="sizeLabel">15 px</span>
+  <button id="btnBigger" title="Schrift größer (Strg+Umschalt++)">A+</button>
+  <button id="btnSettings" title="Einstellungen">&#9881; Einstellungen</button>
+  <button id="btnFull" title="Vollbild (Strg+Umschalt+F)">&#x26F6; Vollbild</button>
+  <button id="btnQuit" title="Alle Terminals beenden und Browserfenster schließen">&#x23FB; QUIT</button>
+</header>
+
+<main id="termWrap"></main>
+<div id="hoverZone"></div>
+
+<div id="bye" hidden>
+  <div class="box">
+    <h2>Alle Terminals wurden beendet.</h2>
+    <p>Der Browser hat das automatische Schließen dieses Fensters verweigert.<br>
+      Bitte mit <b>Strg+W</b> oder <b>Alt+F4</b> schließen.</p>
+    <button id="btnRestart" class="primary">WebTerm neu starten</button>
+  </div>
+</div>
+
+<aside id="settings" hidden>
+  <div class="sHead">
+    <h2>Einstellungen</h2>
+    <button id="btnClose" title="Schließen (Esc)">&#x2715;</button>
+  </div>
+  <div class="sBody">
+    <section>
+      <h3>Schrift</h3>
+      <label class="row">Schriftgröße
+        <span class="pair"><input id="fontSize" type="range" min="8" max="40" step="1">
+        <input id="fontSizeNum" type="number" min="8" max="40" step="1"></span>
+      </label>
+      <label class="row">Schriftart
+        <input id="fontFamily" list="fontList" spellcheck="false">
+        <datalist id="fontList">
+          <option value="DejaVu Sans Mono"><option value="Liberation Mono">
+          <option value="Ubuntu Mono"><option value="Noto Sans Mono">
+          <option value="Fira Code"><option value="JetBrains Mono">
+          <option value="Source Code Pro"><option value="Hack">
+          <option value="Courier New"><option value="monospace">
+        </datalist>
+      </label>
+      <label class="row">Zeilenhöhe
+        <span class="pair"><input id="lineHeight" type="range" min="1" max="1.6" step="0.05">
+        <output id="lineHeightOut"></output></span>
+      </label>
+      <label class="row chk"><input id="bold" type="checkbox"> Fett darstellen erlauben</label>
+    </section>
+
+    <section>
+      <h3>Farben</h3>
+      <label class="row">Farbschema
+        <select id="preset"></select>
+      </label>
+      <div class="colorGrid main" id="mainColors"></div>
+      <h4>ANSI-Farben (normal / hell)</h4>
+      <div class="colorGrid ansi" id="ansiColors"></div>
+    </section>
+
+    <section>
+      <h3>Cursor &amp; Verhalten</h3>
+      <label class="row">Cursor-Form
+        <select id="cursorStyle">
+          <option value="block">Block</option>
+          <option value="underline">Unterstrich</option>
+          <option value="bar">Strich</option>
+        </select>
+      </label>
+      <label class="row chk"><input id="cursorBlink" type="checkbox"> Cursor blinkt</label>
+      <label class="row">Verlauf (Zeilen)
+        <input id="scrollback" type="number" min="0" max="100000" step="500">
+      </label>
+      <label class="row chk"><input id="copyOnSelect" type="checkbox"> Markierten Text automatisch kopieren</label>
+      <label class="row chk"><input id="hideBarFs" type="checkbox"> Leiste im Vollbild ausblenden</label>
+      <label class="row chk"><input id="confirmClose" type="checkbox"> Vor dem Schließen des Tabs nachfragen</label>
+      <label class="row chk"><input id="keyDebug" type="checkbox"> Tastendiagnose in der Leiste anzeigen</label>
+    </section>
+
+    <section class="help">
+      <h3>Tastenkürzel</h3>
+      <table>
+        <tr><td>Strg+Umschalt+Enter</td><td>Neues Terminal (Tab)</td></tr>
+        <tr><td>Strg+Umschalt+X</td><td>Aktives Terminal schließen</td></tr>
+        <tr><td>Strg+Umschalt+E</td><td>Vertikal teilen (nebeneinander)</td></tr>
+        <tr><td>Strg+Umschalt+O</td><td>Horizontal teilen (untereinander)</td></tr>
+        <tr><td>Strg+Umschalt+Bild&#8593; / Bild&#8595;</td><td>Vorheriges / nächstes Terminal</td></tr>
+        <tr><td>Strg+Umschalt+1 … 9</td><td>Zu Terminal 1 … 9 wechseln</td></tr>
+        <tr><td>Strg+Umschalt+F</td><td>Vollbild an/aus</td></tr>
+        <tr><td>Strg+Umschalt+C / V</td><td>Kopieren / Einfügen</td></tr>
+        <tr><td>Strg+Umschalt+ + / − / 0</td><td>Schrift größer / kleiner / Standard</td></tr>
+        <tr><td>Strg+Umschalt+,</td><td>Einstellungen</td></tr>
+      </table>
+      <p>F1–F12, Esc, Alt-, Strg-Kombinationen und die Maus gehen an das Terminal
+        (z.&nbsp;B. <code>mc</code>: F10 = Beenden). Im Vollbild sperrt WebTerm die
+        Tastatur (Chrome/Edge/Chromium), damit auch F11, Esc und Strg+W im Terminal
+        ankommen. Vollbild verlassen: <b>Esc gedrückt halten</b>.</p>
+      <p id="lockInfo" class="note"></p>
+    </section>
+  </div>
+  <div class="sFoot">
+    <button id="btnReset">Standard wiederherstellen</button>
+    <button id="btnExport">Export</button>
+    <button id="btnImport">Import</button>
+    <input id="importFile" type="file" accept=".json,application/json" hidden>
+  </div>
+</aside>
+
+<script src="vendor/xterm.min.js"></script>
+<script src="vendor/addon-fit.min.js"></script>
+<script src="vendor/addon-web-links.min.js"></script>
+<script src="vendor/addon-unicode11.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
